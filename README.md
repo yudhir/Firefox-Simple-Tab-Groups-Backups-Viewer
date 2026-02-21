@@ -8,6 +8,10 @@ This tool lets you browse and view tab groups saved by the [Simple Tab Groups](h
 
 The extension automatically backs up your tab groups to JSON files. This viewer provides a beautiful interface to explore those backups.
 
+## Screenshot
+
+![Screenshot](screenshot.jpeg)
+
 ## Quick Start
 
 1. **Start a local server** in this folder:
