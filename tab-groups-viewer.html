@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAB Groups Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📑</text></svg>">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        glass: {
+                            100: 'rgba(255, 255, 255, 0.1)',
+                            200: 'rgba(255, 255, 255, 0.15)',
+                            300: 'rgba(255, 255, 255, 0.2)',
+                        }
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-btn {
+            background: rgba(99, 102, 241, 0.3);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.2s ease;
+        }
+
+        .glass-btn:hover {
+            background: rgba(99, 102, 241, 0.5);
+            transform: scale(1.05);
+        }
+
+        .glass-btn:active {
+            transform: scale(0.95);
+        }
+
+        .preview-tab {
+            transition: all 0.2s ease;
+        }
+
+        .preview-tab:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeInUp 0.4s ease-out forwards;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="glass rounded-2xl p-5 mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl shadow-lg">
+                    📑
+                </div>
+                <div>
+                    <h1 class="text-xl font-semibold text-white">TAB Groups Viewer</h1>
+                    <p class="text-xs text-gray-400" id="fileInfo">Loading...</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="prevBtn" class="glass-btn px-4 py-2 rounded-lg text-white font-medium">←</button>
+                <button id="nextBtn" class="glass-btn px-4 py-2 rounded-lg text-white font-medium">+1</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewContainer" class="transition-opacity duration-200">
+        <div class="text-center py-20 text-gray-400">Loading tab groups...</div>
+    </div>
+
+    <script>
+        let currentDay = 1;
+        const maxDays = 31;
+        let currentData = null;
+        let currentGroupIndex = -1;
+        let currentGroupTitle = '';
+
+        function getFileName(day) {
+            return `auto-stg-backup-day-of-month-${String(day).padStart(2, '0')}@drive4ik.json`;
+        }
+
+        async function loadData(day, stayOnGroup = false) {
+            const container = document.getElementById('viewContainer');
+            const fileInfo = document.getElementById('fileInfo');
+            
+            container.style.opacity = '0';
+            
+            try {
+                const response = await fetch(getFileName(day));
+                if (!response.ok) throw new Error('File not found: ' + getFileName(day));
+                const data = await response.json();
+                fileInfo.textContent = getFileName(day);
+                currentData = data;
+                
+                if (stayOnGroup && currentGroupIndex >= 0 && data.groups && data.groups[currentGroupIndex]) {
+                    showTabsView(currentGroupIndex, false);
+                } else {
+                    currentGroupIndex = -1;
+                    currentGroupTitle = '';
+                    renderGroupsView(data);
+                }
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `<div class="glass rounded-2xl p-8 text-center"><p class='text-red-400'>Error: ${error.message}</p><p class='text-gray-400 text-sm mt-2'>Make sure the JSON file exists and server is running.</p></div>`;
+            }
+            container.style.opacity = '1';
+        }
+
+        function renderTabPreviews(tabs) {
+            return tabs.map(tab => `
+                <div class="preview-tab flex flex-col items-center p-1.5 rounded cursor-pointer" onclick="event.stopPropagation(); openUrl('${escapeHtml(tab.url)}')">
+                    <div class="w-5 h-5 flex items-center justify-center mb-0.5">
+                        ${tab.favIconUrl ? `<img src="${tab.favIconUrl}" class="w-4 h-4 rounded" alt="">` : '<span class="text-xs">📄</span>'}
+                    </div>
+                    <span class="text-[9px] text-gray-400 text-center leading-tight truncate w-full">${escapeHtml(tab.title)}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderGroupsView(data) {
+            const container = document.getElementById('viewContainer');
+            
+            if (!data.groups || data.groups.length === 0) {
+                container.innerHTML = '<div class="glass rounded-2xl p-8 text-center text-gray-400">No tab groups found</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="mb-4 text-sm text-gray-400">${getFileName(currentDay)}</div>
+                <div class="flex flex-wrap gap-4" style="align-items: flex-start;">
+                    ${data.groups.map((group, index) => {
+                        const tabCount = group.tabs?.length || 0;
+                        const rows = Math.ceil(tabCount / 3);
+                        const heightStyle = rows <= 1 ? 'min-height: 90px;' : rows <= 2 ? 'min-height: 145px;' : rows <= 3 ? 'min-height: 200px;' : rows <= 4 ? 'min-height: 255px;' : 'min-height: 310px;';
+                        return `
+                        <div class="glass-card rounded-xl overflow-hidden cursor-pointer animate-fade-in" onclick="showTabsView(${index})" style="animation-delay: ${index * 0.05}s; width: calc(25% - 12px); min-width: 260px; flex: 1 1 auto; ${heightStyle}">
+                            <div class="p-3 border-b border-white/10">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: ${group.iconColor || '#6366f1'}">
+                                        ${renderGroupIcon(group.iconUrl)}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="text-sm font-medium text-white truncate">${escapeHtml(group.title)}</h3>
+                                        <p class="text-xs text-gray-400">${tabCount} tabs</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-2 bg-black/20 grid grid-cols-3 gap-1" style="${heightStyle}">
+                                ${renderTabPreviews(group.tabs || [])}
+                            </div>
+                        </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function showTabsView(groupIndex, updateCurrent = true) {
+            if (updateCurrent) {
+                currentGroupIndex = groupIndex;
+                currentGroupTitle = currentData.groups[groupIndex]?.title || '';
+            }
+            const group = currentData.groups[groupIndex];
+            const container = document.getElementById('viewContainer');
+            
+            container.style.opacity = '0';
+            
+            setTimeout(() => {
+                container.innerHTML = `
+                    <div class="animate-fade-in">
+                        <div class="flex items-center gap-2 mb-4 text-sm">
+                            <button onclick="loadData(currentDay, false)" class="text-purple-400 hover:text-purple-300 transition-colors">Groups</button>
+                            <span class="text-gray-500">›</span>
+                            <span class="text-white">${escapeHtml(group.title)}</span>
+                            <span class="ml-auto text-gray-500 text-xs">${getFileName(currentDay)}</span>
+                        </div>
+                        <div class="glass rounded-xl p-4 mb-4 flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: ${group.iconColor || '#6366f1'}">
+                                ${renderGroupIcon(group.iconUrl)}
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-white">${escapeHtml(group.title)}</h2>
+                                <p class="text-sm text-gray-400">${group.tabs?.length || 0} tabs</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            ${(group.tabs || []).map(tab => `
+                                <div class="glass-card rounded-xl overflow-hidden cursor-pointer" onclick="openUrl('${escapeHtml(tab.url)}')">
+                                    ${tab.thumbnail ? `<img class="w-full h-32 object-cover" src="${tab.thumbnail}" alt="${escapeHtml(tab.title)}" loading="lazy">` : '<div class="w-full h-32 bg-white/5"></div>'}
+                                    <div class="p-3 flex items-center gap-2">
+                                        ${tab.favIconUrl ? `<img class="w-5 h-5 rounded" src="${tab.favIconUrl}" alt="">` : ''}
+                                        <span class="text-sm text-gray-300 truncate">${escapeHtml(tab.title)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                container.style.opacity = '1';
+            }, 150);
+        }
+
+        function renderGroupIcon(iconUrl) {
+            if (!iconUrl) return '<span class="text-white text-lg">📁</span>';
+            
+            if (iconUrl.startsWith('data:image/svg+xml')) {
+                try {
+                    const decoded = decodeURIComponent(iconUrl.split(',')[1]);
+                    return decoded;
+                } catch (e) {
+                    return '<span class="text-white text-lg">📁</span>';
+                }
+            }
+            return `<img src="${iconUrl}" alt="">`;
+        }
+
+        function openUrl(url) {
+            window.open(url, '_blank');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            currentDay = currentDay >= maxDays ? 1 : currentDay + 1;
+            loadData(currentDay, currentGroupIndex >= 0);
+        });
+
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            currentDay = currentDay <= 1 ? maxDays : currentDay - 1;
+            loadData(currentDay, currentGroupIndex >= 0);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                currentDay = currentDay >= maxDays ? 1 : currentDay + 1;
+                loadData(currentDay, currentGroupIndex >= 0);
+            } else if (e.key === 'p' || e.key === 'P' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                currentDay = currentDay <= 1 ? maxDays : currentDay - 1;
+                loadData(currentDay, currentGroupIndex >= 0);
+            }
+        });
+
+        loadData(currentDay);
+    </script>
+</body>
+</html>
