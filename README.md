@@ -1,6 +1,12 @@
 # TAB Groups Viewer
 
-A simple HTML viewer for Tab Groups backup files from the Tab Groups extension.
+A modern HTML viewer for [Simple Tab Groups](https://addons.mozilla.org/en-US/firefox/addon/simple-tab-groups/) browser extension backups.
+
+## About
+
+This tool lets you browse and view tab groups saved by the [Simple Tab Groups](https://addons.mozilla.org/en-US/firefox/addon/simple-tab-groups/) Firefox extension by [drive4ik](https://github.com/drive4ik/simple-tab-groups).
+
+The extension automatically backs up your tab groups to JSON files. This viewer provides a beautiful interface to explore those backups.
 
 ## Quick Start
 
@@ -19,8 +25,9 @@ A simple HTML viewer for Tab Groups backup files from the Tab Groups extension.
 - **Grid View**: All groups displayed as cards with tab icons
 - **Drill-down**: Click a group to see full tabs with thumbnails
 - **Quick Open**: Click any favicon to open the website directly
-- **Browse Backups**: Use **+1** and **←** buttons to cycle through backup files (day 01-31)
-- **Stay on Group**: When switching backups, the current group view stays open so you can see changes
+- **Browse Backups**: Navigate between 31 backup files (arrow buttons or keyboard)
+- **Stay on Group**: When switching backups, the current group view stays open
+- **Keyboard Shortcuts**: Press `n`/`p` or arrow keys to switch backups
 
 ## Navigation
 
@@ -33,9 +40,9 @@ A simple HTML viewer for Tab Groups backup files from the Tab Groups extension.
 
 | Key | Action |
 |-----|--------|
-| `n` or `→` (Right Arrow) | Next backup file (+1) |
+| `n` or `→` (Right Arrow) | Next backup file |
 | `p` or `←` (Left Arrow) | Previous backup file |
-| Click **+1** button | Next backup file |
+| Click **→** button | Next backup file |
 | Click **←** button | Previous backup file |
 
 ## Requirements
