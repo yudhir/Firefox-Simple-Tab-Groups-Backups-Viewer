@@ -75,11 +75,44 @@
 
         .preview-tab {
             transition: all 0.2s ease;
+            position: relative;
+            padding: 8px 6px;
         }
 
         .preview-tab:hover {
             background: rgba(255, 255, 255, 0.15);
             transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .preview-tab .tab-tooltip {
+            position: absolute;
+            background: rgba(30, 30, 60, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            white-space: normal;
+            word-break: break-word;
+            max-width: 280px;
+            min-width: 160px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            z-index: 100;
+            text-align: left;
+            line-height: 1.5;
+            pointer-events: none;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 6px;
+            display: none;
+        }
+
+        .preview-tab:hover .tab-tooltip {
+            display: block;
         }
 
         @keyframes fadeInUp {
@@ -95,6 +128,35 @@
 
         .animate-fade-in {
             animation: fadeInUp 0.4s ease-out forwards;
+            opacity: 0;
+        }
+
+        .masonry-grid {
+            column-count: 1;
+            column-gap: 16px;
+        }
+
+        @media (min-width: 640px) {
+            .masonry-grid {
+                column-count: 2;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .masonry-grid {
+                column-count: 3;
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .masonry-grid {
+                column-count: 4;
+            }
+        }
+
+        .masonry-grid > .glass-card {
+            break-inside: avoid;
+            margin-bottom: 16px;
         }
 
         ::-webkit-scrollbar {
@@ -129,8 +191,13 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <button id="prevBtn" class="glass-btn px-4 py-2 rounded-lg text-white font-medium">←</button>
-                <button id="nextBtn" class="glass-btn px-4 py-2 rounded-lg text-white font-medium">+1</button>
+                <div class="flex items-center gap-1 text-xs text-gray-400">
+                    <kbd class="px-1.5 py-0.5 rounded bg-white/10 border border-white/20">n</kbd>
+                    <span>or</span>
+                    <kbd class="px-1.5 py-0.5 rounded bg-white/10 border border-white/20">→</kbd>
+                </div>
+                <button id="prevBtn" class="glass-btn px-3 py-2 rounded-lg text-white font-medium text-sm">←</button>
+                <button id="nextBtn" class="glass-btn px-3 py-2 rounded-lg text-white font-medium text-sm">→</button>
             </div>
         </div>
     </div>
@@ -179,11 +246,12 @@
 
         function renderTabPreviews(tabs) {
             return tabs.map(tab => `
-                <div class="preview-tab flex flex-col items-center p-1.5 rounded cursor-pointer" onclick="event.stopPropagation(); openUrl('${escapeHtml(tab.url)}')">
-                    <div class="w-5 h-5 flex items-center justify-center mb-0.5">
-                        ${tab.favIconUrl ? `<img src="${tab.favIconUrl}" class="w-4 h-4 rounded" alt="">` : '<span class="text-xs">📄</span>'}
+                <div class="preview-tab flex flex-col items-center rounded cursor-pointer" onclick="event.stopPropagation(); openUrl('${escapeHtml(tab.url)}')">
+                    <div class="w-6 h-6 flex items-center justify-center mb-1">
+                        ${tab.favIconUrl ? `<img src="${tab.favIconUrl}" class="w-5 h-5 rounded" alt="">` : '<span class="text-sm">📄</span>'}
                     </div>
-                    <span class="text-[9px] text-gray-400 text-center leading-tight truncate w-full">${escapeHtml(tab.title)}</span>
+                    <span class="text-xs text-gray-300 text-center leading-tight truncate w-full">${escapeHtml(tab.title)}</span>
+                    <div class="tab-tooltip">${escapeHtml(tab.title)}</div>
                 </div>
             `).join('');
         }
@@ -198,13 +266,13 @@
 
             container.innerHTML = `
                 <div class="mb-4 text-sm text-gray-400">${getFileName(currentDay)}</div>
-                <div class="flex flex-wrap gap-4" style="align-items: flex-start;">
+                <div class="masonry-grid">
                     ${data.groups.map((group, index) => {
                         const tabCount = group.tabs?.length || 0;
-                        const rows = Math.ceil(tabCount / 3);
-                        const heightStyle = rows <= 1 ? 'min-height: 90px;' : rows <= 2 ? 'min-height: 145px;' : rows <= 3 ? 'min-height: 200px;' : rows <= 4 ? 'min-height: 255px;' : 'min-height: 310px;';
+                        const rows = Math.ceil(tabCount / 2);
+                        const heightStyle = rows <= 1 ? 'min-height: 80px;' : rows <= 2 ? 'min-height: 130px;' : rows <= 3 ? 'min-height: 180px;' : rows <= 4 ? 'min-height: 230px;' : 'min-height: 280px;';
                         return `
-                        <div class="glass-card rounded-xl overflow-hidden cursor-pointer animate-fade-in" onclick="showTabsView(${index})" style="animation-delay: ${index * 0.05}s; width: calc(25% - 12px); min-width: 260px; flex: 1 1 auto; ${heightStyle}">
+                        <div class="glass-card rounded-xl overflow-hidden cursor-pointer animate-fade-in" onclick="showTabsView(${index})" style="animation-delay: ${index * 0.05}s; ${heightStyle}">
                             <div class="p-3 border-b border-white/10">
                                 <div class="flex items-center gap-2">
                                     <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: ${group.iconColor || '#6366f1'}">
@@ -216,7 +284,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="p-2 bg-black/20 grid grid-cols-3 gap-1" style="${heightStyle}">
+                            <div class="p-2 bg-black/20 grid grid-cols-2 gap-1" style="${heightStyle}">
                                 ${renderTabPreviews(group.tabs || [])}
                             </div>
                         </div>
